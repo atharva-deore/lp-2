@@ -1,0 +1,183 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <unordered_map>
+#include <limits>
+#include <algorithm>
+
+using namespace std;
+
+// Define a structure to represent a node in the graph
+struct Node {
+    int id;
+    double heuristic; // Heuristic value for A* algorithm
+    double cost;      // Total cost from start node to this node
+};
+
+// Define a structure to represent an edge in the graph
+struct Edge {
+    int to;
+    double cost;
+};
+
+// A custom comparator for the priority queue used in A* algorithm
+struct CompareNode {
+    bool operator()(const Node &a, const Node &b) {
+        // Compare total estimated cost (heuristic + cost) of two nodes
+        return a.heuristic + a.cost > b.heuristic + b.cost;
+    }
+};
+
+// A* algorithm implementation
+vector<int> astar(const vector<vector<Edge>> &graph, int start, int goal, const vector<double> &heuristic) {
+    // Priority queue to store nodes to be explored
+    priority_queue<Node, vector<Node>, CompareNode> pq;
+
+    // Map to store the cost from start node to each node
+    unordered_map<int, double> cost_so_far;
+
+    // Map to store the parent of each node
+    unordered_map<int, int> came_from;
+
+    // Initialize start node
+    Node start_node = {start, heuristic[start], 0.0};
+    pq.push(start_node);
+    cost_so_far[start] = 0.0;
+
+    // A* search
+    while (!pq.empty()) {
+        // Get the node with the minimum estimated total cost
+        Node current = pq.top();
+        pq.pop();
+
+        // Check if the current node is the goal
+        if (current.id == goal) {
+            // Reconstruct the path
+            vector<int> path;
+            int node = goal;
+            while (node != start) {
+                path.push_back(node);
+                node = came_from[node];
+            }
+            path.push_back(start);
+            reverse(path.begin(), path.end());
+            return path;
+        }
+
+        // Explore neighbors of the current node
+        for (const Edge &edge : graph[current.id]) {
+            double new_cost = cost_so_far[current.id] + edge.cost;
+            if (!cost_so_far.count(edge.to) || new_cost < cost_so_far[edge.to]) {
+                cost_so_far[edge.to] = new_cost;
+                Node next = {edge.to, heuristic[edge.to], new_cost};
+                pq.push(next);
+                came_from[edge.to] = current.id;
+            }
+        }
+    }
+
+    // If the goal is not reachable
+    return vector<int>();
+}
+
+// Function to initialize the graph with edges and costs corresponding to the map of Romania
+void initializeRomaniaMap(vector<vector<Edge>> &graph, vector<double> &heuristic) {
+    // Define the edges and their costs for the map of Romania
+    // For simplicity, I'm not including all the edges, just some representative ones
+    graph.resize(20); // Romania map has 20 cities
+
+    // Add edges and their costs
+    // Arad
+    graph[0].push_back({1, 71});  // Arad to Zerind
+    graph[0].push_back({2, 75});  // Arad to Sibiu
+    graph[0].push_back({3, 140}); // Arad to Timisoara
+    // Zerind
+    graph[1].push_back({0, 71});  // Zerind to Arad
+    graph[1].push_back({6, 75});  // Zerind to Oradea
+    // Sibiu
+    graph[2].push_back({0, 75});  // Sibiu to Arad
+    graph[2].push_back({6, 140}); // Sibiu to Fagaras
+    graph[2].push_back({9, 99});  // Sibiu to Rimnicu Vilcea
+    // Timisoara
+    graph[3].push_back({0, 140}); // Timisoara to Arad
+    graph[3].push_back({4, 118}); // Timisoara to Lugoj
+    // Lugoj
+    graph[4].push_back({3, 111}); // Lugoj to Timisoara
+    graph[4].push_back({5, 70});  // Lugoj to Mehadia
+    // Mehadia
+    graph[5].push_back({4, 70});  // Mehadia to Lugoj
+    graph[5].push_back({7, 75});  // Mehadia to Drobeta
+    // Oradea
+    graph[6].push_back({1, 75});  // Oradea to Zerind
+    graph[6].push_back({2, 151}); // Oradea to Sibiu
+    // Drobeta
+    graph[7].push_back({5, 75});  // Drobeta to Mehadia
+    graph[7].push_back({8, 120}); // Drobeta to Craiova
+    // Craiova
+    graph[8].push_back({7, 120}); // Craiova to Drobeta
+    graph[8].push_back({9, 146}); // Craiova to Pitesti
+    graph[8].push_back({11, 138});// Craiova to Rimnicu Vilcea
+    // Rimnicu Vilcea
+    graph[9].push_back({2, 99});  // Rimnicu Vilcea to Sibiu
+    graph[9].push_back({8, 146}); // Rimnicu Vilcea to Craiova
+    graph[9].push_back({10, 97}); // Rimnicu Vilcea to Pitesti
+    // Fagaras
+    graph[10].push_back({9, 80}); // Fagaras to Rimnicu Vilcea
+    graph[10].push_back({17, 211});// Fagaras to Bucharest
+    // Pitesti
+    graph[11].push_back({8, 138}); // Pitesti to Craiova
+    graph[11].push_back({9, 97});  // Pitesti to Rimnicu Vilcea
+    graph[11].push_back({12, 101});// Pitesti to Bucharest
+    // Bucharest
+    graph[12].push_back({10, 211});// Bucharest to Fagaras
+    graph[12].push_back({11, 101});// Bucharest to Pitesti
+    // Giurgiu
+    graph[13].push_back({12, 90}); // Giurgiu to Bucharest
+    // Urziceni
+    graph[14].push_back({10, 85}); // Urziceni to Fagaras
+    graph[14].push_back({17, 98}); // Urziceni to Bucharest
+    // Hirsova
+    graph[15].push_back({14, 86}); // Hirsova to Urziceni
+    graph[15].push_back({16, 98}); // Hirsova to Eforie
+    // Eforie
+    graph[16].push_back({15, 86}); // Eforie to Hirsova
+    // Vaslui
+    graph[17].push_back({10, 142});// Vaslui to Iasi
+    graph[17].push_back({18, 92}); // Vaslui to Neamt
+    // Iasi
+    graph[18].push_back({17, 92}); // Iasi to Vaslui
+    // Neamt
+    graph[19].push_back({17, 142});// Neamt to Iasi
+
+    // Define heuristic values for each node based on straight-line distances to the goal (Bucharest)
+    // For simplicity, I'm not calculating exact distances, just providing some heuristic values
+    heuristic = {366, 374, 380, 253, 329, 244, 0, 160, 176, 193, 98, 178, 77, 80, 151, 161, 199, 226, 234, 0};
+
+}
+
+int main() {
+    // Initialize the graph and heuristic values for the map of Romania
+    vector<vector<Edge>> graph;
+    vector<double> heuristic;
+    initializeRomaniaMap(graph, heuristic);
+
+    int start, goal;
+    cout << "Enter the start node and the goal node: ";
+    cin >> start >> goal;
+
+    // Find the shortest path using A* algorithm
+    vector<int> path = astar(graph, start, goal, heuristic);
+
+    // Print the path
+    if (!path.empty()) {
+        cout << "Path found: ";
+        for (int node : path) {
+            cout << node << " ";
+        }
+        cout << endl;
+    } else {
+        cout << "Path not found" << endl;
+    }
+
+    return 0;
+}
